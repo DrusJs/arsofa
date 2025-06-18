@@ -1,0 +1,750 @@
+<!doctype html>
+<html>
+  <head>
+	<title></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">	
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script src="js/three.min.js"></script>
+	<script src="js/GLTFLoader.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<link rel="stylesheet" href="css/normalize.css">
+	<style>
+		html {
+			box-sizing: border-box;
+		}
+
+		*,
+		*::before,
+		*::after {
+			box-sizing: inherit;
+		}
+
+		body {
+			font-family: sans-serif;
+			min-height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			min-width: 370px;
+		}
+
+		.container {
+			padding: 0 15px;
+			width: 100%;
+			max-width: 1780px;
+			margin: 0 auto;
+		}
+
+		.page {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: 70px;
+			background-color: #fff;
+			padding: 50px;
+		}
+
+		.page__img-wrapper {
+			position: relative;
+			margin-bottom: 20px;
+		}
+
+		.page__img-wrapper img {
+			display: block;
+			border-radius: 10px;
+			max-width: 100%;
+		}
+
+		.page__text-wrapper {
+			max-width: 750px;
+		}
+
+		.page__title {
+			margin: 0;
+			margin-bottom: 20px;
+			font-size: 700px;
+			font-size: 30px;
+		}
+
+		.page__descr {
+			margin: 0;
+			font-weight: 400;
+			font-size: 16px;
+			line-height: 24px;
+		}
+
+		.page__btn-try {
+			font-size: 13px;
+			display: flex;
+			text-decoration: none;
+			align-items: center;
+			gap: 10px;
+			color: #fff;
+			border: none;
+			background-color: #2b6bb0;
+			border-radius: 10px 0;
+			padding: 7px 11px;
+			cursor: pointer;
+		}
+
+		.page__btn-try-wrapper {
+			position: absolute;
+			right: 0;
+			bottom: 0;
+		}
+
+		.page__btn-try svg {
+			width: 26px;
+			height: 26px;
+			object-fit: cover;
+			fill: currentColor;
+		}
+
+		.page__btn-3d {
+			display: inline-block;
+			font-size: 13px;
+			background-color: #ddeaff;
+			border-radius: 3px;
+			color: #003c7e;
+			cursor: pointer;
+			padding: 20px 15px;
+			border: none;
+			max-width: 120px;
+			text-align: center;
+			text-decoration: none;
+		}
+
+		.modal-fade {
+			position: fixed;
+			left: 0;
+			top: 0;
+
+			width: 100%;
+			height: 100%;
+
+			background: #000;
+			opacity: 0;
+			visibility: hidden;
+			transition: 
+							opacity .3s ease-in-out,
+							visibility .3s ease-in-out;
+
+			z-index: 10;
+		}
+
+		.modal-fade.active {
+			opacity: .5;
+			visibility: visible;
+		}
+
+		.modal {
+			position: fixed;
+			left: 0;
+			top: 0;
+
+			width: 100%;
+			height: 100%;
+
+			overflow-x: hidden;
+			overflow-y: auto;
+			opacity: 0;
+			visibility: hidden;
+
+			z-index: 11;
+		}
+
+		.modal.active {
+			opacity: 1;
+			visibility: visible;
+		}
+
+		.modal.active .modal__content {
+			opacity: 1;
+			top: 0;
+		}
+
+		.modal__content {
+			color: #FFF;
+			opacity: 0;
+			position: relative;
+			top: 30px;
+			transition: 
+							top .5s .5s,
+							opacity .5s .5s;
+
+			min-height: 100vh;
+			padding: 30px;
+			display: flex;
+			justify-content: center;   
+			align-items: center;
+			margin-top: 0;
+		}
+
+		.modal__content-block {
+			max-width: 750px;
+			width: 100%;
+			position: relative;
+		}
+
+		.modal__timeline {
+			text-align: center;
+			background-color: #fff;
+			padding: 30px;
+			border-radius: 15px;
+			color: #000;
+			width: 100%;
+			max-width: 600px;
+			position: relative;
+			margin: 0 auto;
+		}
+
+		.modal__content-close {
+			cursor: pointer;
+			width: 20px;
+			height: 20px;
+			pointer-events: initial;
+			color: #fff;
+			position: absolute;
+			right: 15px;
+			top: 15px;
+			color: #000;
+		}
+
+		.modal__content-close svg {
+			width: 100%;
+			height: 100%;
+			fill: currentColor;
+			object-fit: cover;
+		}
+
+		#viewportContainer, #viewport 
+		{
+			position:absolute;
+			left:0;
+			top:0;
+			right:0;
+			bottom:0;
+			border-radius: 10px;
+		}
+		
+		#ui 
+		{
+			position:absolute;
+			left:20px;
+			top:20px;
+			background:white;
+			z-index:2;
+			display:none;
+			padding:10px;
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		#ui.active {
+			opacity: 1;
+			pointer-events: initial;
+		}
+
+		.dis-scroll {
+			position: fixed;
+			left: 0;
+			top: 0;
+
+			width: 100%;
+			height: 100vh;
+
+			overflow: hidden;
+			overscroll-behavior: none;
+		}
+
+		.sofa-3d {
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.sofa-3d.active {
+			opacity: 1;
+			pointer-events: initial;
+			cursor: grab;
+		}
+
+		.sofa-3d.active:active {
+			cursor: grabbing;
+		}
+
+		.hold-rotate {
+			position: absolute;
+			bottom: 10px;
+			left: 50%;
+			transform: translateX(-50%);
+			background-color: rgba(25,27,29,.2);
+			border-radius: 8px;
+			color: #221924;
+			font-size: 16px;
+			padding: 12px;
+			pointer-events: none;
+			display: none;
+		}
+
+		.hold-rotate.active {
+			display: block;
+		}
+
+		.page__close-popup {
+			position: absolute;
+			right: 15px;
+			top: 15px;
+			color: #000;
+			cursor: pointer;
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.page__close-popup.active {
+			opacity: 1;
+			pointer-events: initial;
+		}
+
+		.page__close-popup svg {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			fill: currentColor;
+		}
+
+		@media (max-width: 1199px) {
+			.page {
+				gap: 30px;
+			}
+
+			.page__title {
+				font-size: 20px;
+			}
+
+			.page__descr {
+				font-size: 14px;
+			}
+
+			.page__btn-try {
+				font-size: 11px;
+				gap: 5px;
+			}
+			.page__btn-try svg {
+				width: 20px;
+				height: 20px;
+			}
+			.page__btn-3d {
+				font-size: 11px;
+			}
+		}
+
+		@media (max-width: 991px) {
+			.page {
+				grid-template-columns: 1fr;
+			}
+
+			.page__btn-try {
+				font-size: 15px;
+			}
+
+			.page__btn-3d {
+				font-size: 15px;
+			}
+
+			#viewportContainer {
+				display: flex;
+			}
+		}
+
+		@media (max-width: 575px) {
+
+			.page {
+				padding-left: 15px;
+				padding-right: 15px;
+			}
+			.page__title {
+				font-size: 15px;
+			}
+
+			.page__descr {
+				font-size: 12px;
+			}
+
+			.hold-rotate {
+				font-size: 12px;
+			}
+
+			.page__close-popup {
+				width: 18px;
+				height: 18px;
+				right: 10px;
+				top: 10px;	
+			}
+
+			#ui {
+				padding: 5px;
+				left: 10px;
+				top: 10px;
+			}
+
+			#colorPicker {
+				width: 30px;
+				height: 20px;
+			}
+		}
+
+	</style>
+  </head>
+  <body>
+
+		<div class="container">
+			<div class="page">
+				<div class="page__wrapper">
+					<div class="page__img-wrapper">
+						<img src="img/sofa-img.png" alt="Фотография дивана">
+	
+						<div class="page__btn-try-wrapper"></div>
+	
+						<div class="sofa-3d" id="viewportContainer"><canvas id="viewport"></canvas></div>
+						<div id="ui"><input id="colorPicker" type="color" value="#FFFFFF"></input></div>
+
+
+						<div class="hold-rotate">Нажмите и вращайте</div>
+
+						<div class="page__close-popup">
+							<svg width="26" height="26" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path
+											d="M17.5302 1.52997L16.4702 0.469971L9.00021 7.939L1.53022 0.469971L0.470215 1.52997L7.93921 9L0.470215 16.47L1.53022 17.53L9.00021 10.061L16.4702 17.53L17.5302 16.47L10.0612 9L17.5302 1.52997Z" />
+							</svg>
+					</div>
+	
+					</div>
+					<button class="page__btn-3d">Модель 3D</button>
+				</div>
+				<div class="page__text-wrapper">
+					<h1 class="page__title">Диван трехместный</h1>
+					<p class="page__descr">
+						Трехместный диван Florence (Флоренс) – отличный выбор для тех, кто предпочитает лаконичную, элегантную и неброскую мебель. Такая модель с обивкой из практичной рогожки нейтрального серого оттенка, с разноцветными пуговицами и высокими ножками из дерева универсальна – она будет одинаково хорошо смотреться в сдержанном интерьере и в помещении, при декоре которого использованы преимущественно яркие тона.
+					</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="modal">
+			<div class="modal__content">
+					<div class="modal__content-block">
+
+							<div class="modal__timeline">
+									<div class="modal__content-close">
+											<svg width="26" height="26" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+													<path
+															d="M17.5302 1.52997L16.4702 0.469971L9.00021 7.939L1.53022 0.469971L0.470215 1.52997L7.93921 9L0.470215 16.47L1.53022 17.53L9.00021 10.061L16.4702 17.53L17.5302 16.47L10.0612 9L17.5302 1.52997Z" />
+											</svg>
+									</div>
+
+									<h2 class="modal__title">Примерить в комнате</h2>
+									<div class="modal__descr">Чтобы примерить в комнате данный товар необходимо перейти в мобильную версию сайта.</div>
+									<img style="max-width: 450px;" src="img/qr.svg" alt="QR Код" width="100%">
+									<div class="modal__descr">
+										Если у вас возникают сложности, воспользуйтесь ссылкой, открыв её с мобильного телефона. <a href="https://geoquest.best/ar/sofa/ar.html">https://geoquest.best/ar/sofa/ar.html</a>
+									</div>
+							</div>
+
+					</div>
+			</div>
+	</div>
+
+	<div class="modal-fade"></div>
+
+	<script type="text/javascript">
+		
+		console.clear();
+
+		const CANVAS = document.querySelector( '#viewport' );
+		const CONTAINER = document.querySelector( '#viewportContainer' );
+		const FILE = 'sofa.glb';
+		const TEXTURE_LOADER = new THREE.TextureLoader();
+		
+		let MODEL, MATERIAL;
+		let canvasWidth = 0;
+		let canvasHeight = 0;
+		let renderer, camera, scene, gridHelper, controls, container;
+
+		const loadAssets = ( onComplete ) =>
+		{
+			const onLoaderError = ( error ) => console.log( 'An error happened -> ' + error );
+			const onModelLoaderComplete = ( gltf ) =>
+			{		
+				renderer = new THREE.WebGLRenderer( { antialias:true, preserveDrawingBuffer:true, canvas:CANVAS } );
+				// renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.setSize( canvasWidth, canvasHeight );
+				renderer.setClearColor( 0xEFEFEF );
+
+				gltf.scene.traverse( ( mesh ) =>
+				{
+					if( mesh.isMesh )
+					{
+						console.log( mesh.name, mesh.material );
+
+						if( MATERIAL == null && mesh.material && mesh.material.name == '01___Default' )
+							MATERIAL = mesh.material;
+					}
+				} );
+
+				MODEL = gltf;
+
+				if( MODEL && onComplete ) onComplete();
+			};
+
+			const loader = new THREE.GLTFLoader();
+				  loader.load( FILE, onModelLoaderComplete, null, onLoaderError );
+
+		};
+		
+		const setSize = ( w, h ) =>
+		{
+			canvasWidth = w;
+			canvasHeight = h;
+
+			if( renderer )
+			{
+				camera.aspect = canvasWidth / canvasHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( canvasWidth, canvasHeight );	
+			}
+		};
+		
+		const init = () =>
+		{
+			camera = new THREE.PerspectiveCamera( 55, canvasWidth / canvasHeight, 0.05, 100 );
+			camera.position.set( 0, 18, 0 );
+
+			gridHelper = new THREE.GridHelper( 250, 100, 0xCCCCCC, 0xCCCCCC );
+
+			scene = new THREE.Scene();
+			scene.add( camera );	
+			scene.add( new THREE.AmbientLight( 0x999999 ) );
+
+			let light = new THREE.DirectionalLight( 0x999999 );
+				light.position.set( 0, 0.5, 0.5 );
+				
+			let	light2 = new THREE.DirectionalLight( 0x222222 );
+				light2.position.set( -1, -1, 0 );
+				
+			let	light3 = new THREE.DirectionalLight( 0x0f0f0f );
+				light3.position.set( 0, 0.25, 1 );
+			
+			scene.add( light );
+			scene.add( light2 );
+			scene.add( light3 );
+			
+			container = new THREE.Object3D();
+			container.add( MODEL.scene );
+			
+			scene.add( container );
+			
+			controls = new THREE.OrbitControls( camera, renderer.domElement );
+			controls.autoRotate = false;
+			controls.enablePan = true;
+			controls.enableKeys = false;
+			controls.screenSpacePanning = true;
+			controls.minPolarAngle = controls.maxPolarAngle = Math.PI / 180 * 90;
+			//controls.minAzimuthAngle = controls.maxAzimuthAngle = Math.PI / 180 * -0.1;
+			controls.update();
+
+			controls.minPolarAngle = Math.PI / 180 * 0;
+			controls.maxPolarAngle = Math.PI / 180 * 135;
+			controls.minAzimuthAngle = -Infinity;
+			controls.maxAzimuthAngle = Infinity;
+			
+			render();
+			
+			//
+			
+			const _ui = document.querySelector( '#ui' );
+				  _ui.style.display = 'block'; 
+				  
+			const _colorPicker = document.querySelector( '#colorPicker' );
+				  _colorPicker.onchange = ( event ) => 
+				  {
+						if( MATERIAL != null )
+							MATERIAL.color.set( colorPicker.value );
+				  };
+			
+		};
+
+
+		const render = ( timestamp ) =>
+		{
+			if( timestamp === undefined || CONTAINER.offsetWidth != canvasWidth || CONTAINER.offsetHeight != canvasHeight )
+			{
+				setSize( CONTAINER.offsetWidth, CONTAINER.offsetHeight );
+				
+				let box = new THREE.Box3();
+					box.expandByObject( container );
+
+				let size = box.getSize( new THREE.Vector3() );
+				let center = box.getCenter( new THREE.Vector3() );
+
+				let maxSize = Math.max( size.x, size.y, size.z );
+				let fitHeightDistance = maxSize / ( 2 * Math.atan( Math.PI * camera.fov / 360 ) );
+				let fitWidthDistance = fitHeightDistance / camera.aspect;
+				let distance = Math.max( fitHeightDistance, fitWidthDistance );
+
+				let direction = controls.target.clone()
+					.sub( camera.position )
+					.normalize()
+					.multiplyScalar( distance );						
+
+				controls.minDistance = controls.maxDistance = distance * 1.1;
+				controls.target.copy( center );
+				controls.update();
+				
+				controls.minDistance /= 4;
+				controls.maxDistance *= 4;
+
+				camera.near = distance / 100;
+				camera.far = distance * 100;
+				camera.updateProjectionMatrix();
+
+				camera.position.copy( controls.target ).sub( direction );
+			}
+
+			controls.update();
+			
+			renderer.render( scene, camera );
+			requestAnimationFrame( render );
+		};
+		
+		window.onload = () => loadAssets( init );
+			
+	</script>
+	<script>
+		mobileCheck();
+
+		const pageBtnTryWrapper = document.querySelector('.page__btn-try-wrapper');
+
+		if(document.documentElement.classList.contains('page--android') || document.documentElement.classList.contains('page--ios')) {
+			pageBtnTryWrapper.innerHTML = `
+				<a class="page__btn-try" href="ar.html">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34" fill="#000">
+						<path d="M6.2668 5.69637L2.42322 7.34352C2.16639 7.45317 2 7.70581 2 7.98517V11.4539C2 11.8396 2.3127 12.1523 2.69839 12.1523C3.08407 12.1523 3.39678 11.8396 3.39678 11.4539V9.04427L5.80604 10.0765C5.89578 10.1151 5.98919 10.1334 6.08085 10.1334C6.352 10.1334 6.60971 9.97453 6.72302 9.70984C6.8751 9.35523 6.7108 8.94458 6.35637 8.79286L4.47107 7.98517L6.81713 6.97983C7.17139 6.82811 7.33586 6.41746 7.18378 6.06285C7.03223 5.70894 6.62176 5.5436 6.2668 5.69637Z" fill="currentColor"/>
+						<path d="M32.3056 7.36849L28.462 5.72134C28.1063 5.56892 27.6964 5.73322 27.545 6.088C27.3929 6.4426 27.5572 6.85325 27.9117 7.00498L30.2579 8.0103L28.3724 8.81851C28.0182 8.97024 27.8537 9.38089 28.0058 9.7355C28.1189 10.0002 28.3768 10.1591 28.6479 10.1591C28.7396 10.1591 28.8332 10.1407 28.9227 10.1021L31.332 9.06941V11.479C31.332 11.8647 31.6447 12.1774 32.0304 12.1774C32.4161 12.1774 32.7288 11.8647 32.7288 11.479V8.0103C32.7288 7.73095 32.5624 7.47831 32.3056 7.36849Z" fill="currentColor"/>
+						<path d="M14.4385 3.71161L16.665 2.75744V5.19028C16.665 5.57596 16.9777 5.88866 17.3634 5.88866C17.7491 5.88866 18.0618 5.57596 18.0618 5.19028V2.75727L20.4345 3.77394C20.5243 3.81253 20.6177 3.83086 20.7093 3.83086C20.9805 3.83086 21.2382 3.67198 21.3515 3.40729C21.5036 3.05269 21.3393 2.64203 20.9849 2.49031L17.6385 1.05634C17.4625 0.980568 17.264 0.980568 17.0882 1.05634L13.8882 2.4278C13.5339 2.57953 13.3695 2.99018 13.5215 3.34479C13.6733 3.69974 14.085 3.86543 14.4385 3.71161Z" fill="currentColor"/>
+						<path d="M13.8882 13.5396L16.6681 14.7308V22.3576C16.6681 22.7433 16.9808 23.056 17.3665 23.056C17.7522 23.056 18.0649 22.7433 18.0649 22.3576V14.7308L20.8928 13.5188C21.2471 13.3671 21.4116 12.9564 21.2595 12.6018C21.1078 12.2479 20.6975 12.0824 20.3425 12.2352L17.3665 13.5106L14.4385 12.2559C14.0832 12.1032 13.6729 12.2682 13.5215 12.6226C13.3695 12.9774 13.5339 13.3878 13.8882 13.5396Z" fill="currentColor"/>
+						<path d="M6.49796 27.0133L4.47107 26.1447L8.43546 23.3028C8.78971 23.151 8.95418 22.7404 8.80211 22.3858C8.65038 22.0315 8.24008 21.8674 7.88513 22.0191L3.39677 25.0856V18.0575C3.39677 17.6718 3.08407 17.3591 2.69839 17.3591C2.3127 17.3591 2 17.6718 2 18.0575V26.1447C2 26.424 2.16639 26.6767 2.42322 26.7865L5.94763 28.2968C6.03737 28.3353 6.13078 28.3537 6.22245 28.3537C6.4936 28.3537 6.7513 28.1948 6.86461 27.9301C7.01651 27.5755 6.85222 27.165 6.49796 27.0133Z" fill="currentColor"/>
+						<path d="M20.5128 30.3151L18.0627 31.3651V28.9323C18.0627 28.5466 17.75 28.2339 17.3643 28.2339C16.9786 28.2339 16.6659 28.5466 16.6659 28.9323V31.3651L14.3057 30.3537C13.9504 30.2002 13.5398 30.3655 13.3887 30.7203C13.2367 31.0749 13.401 31.4856 13.7554 31.6373L17.0892 33.0662C17.1772 33.1041 17.2706 33.1228 17.3643 33.1228C17.4581 33.1228 17.5515 33.1041 17.6395 33.0662L21.0632 31.5989C21.4174 31.4472 21.5819 31.0365 21.4298 30.6819C21.2781 30.3273 20.8678 30.163 20.5128 30.3151Z" fill="currentColor"/>
+						<path d="M32.0327 17.3591C31.647 17.3591 31.3343 17.6718 31.3343 18.0575V25.0856L25.9425 22.0607C25.5875 21.9072 25.1765 22.0733 25.0255 22.4273C24.8734 22.7819 25.0377 23.1926 25.3921 23.3443L30.2598 26.1445L28.2912 26.9883C27.9369 27.1401 27.7725 27.5507 27.9245 27.9053C28.0377 28.17 28.2956 28.3289 28.5667 28.3289C28.6584 28.3289 28.752 28.3106 28.8415 28.272L32.308 26.7865C32.5646 26.6767 32.731 26.424 32.731 26.1447V18.0575C32.731 17.6718 32.4183 17.3591 32.0327 17.3591Z" fill="currentColor"/>
+					</svg>
+					Примерить в интерьере
+				</a>
+			`;
+		} else {
+			pageBtnTryWrapper.innerHTML = `
+				<button class="page__btn-try">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34 34" fill="#000">
+						<path d="M6.2668 5.69637L2.42322 7.34352C2.16639 7.45317 2 7.70581 2 7.98517V11.4539C2 11.8396 2.3127 12.1523 2.69839 12.1523C3.08407 12.1523 3.39678 11.8396 3.39678 11.4539V9.04427L5.80604 10.0765C5.89578 10.1151 5.98919 10.1334 6.08085 10.1334C6.352 10.1334 6.60971 9.97453 6.72302 9.70984C6.8751 9.35523 6.7108 8.94458 6.35637 8.79286L4.47107 7.98517L6.81713 6.97983C7.17139 6.82811 7.33586 6.41746 7.18378 6.06285C7.03223 5.70894 6.62176 5.5436 6.2668 5.69637Z" fill="currentColor"/>
+						<path d="M32.3056 7.36849L28.462 5.72134C28.1063 5.56892 27.6964 5.73322 27.545 6.088C27.3929 6.4426 27.5572 6.85325 27.9117 7.00498L30.2579 8.0103L28.3724 8.81851C28.0182 8.97024 27.8537 9.38089 28.0058 9.7355C28.1189 10.0002 28.3768 10.1591 28.6479 10.1591C28.7396 10.1591 28.8332 10.1407 28.9227 10.1021L31.332 9.06941V11.479C31.332 11.8647 31.6447 12.1774 32.0304 12.1774C32.4161 12.1774 32.7288 11.8647 32.7288 11.479V8.0103C32.7288 7.73095 32.5624 7.47831 32.3056 7.36849Z" fill="currentColor"/>
+						<path d="M14.4385 3.71161L16.665 2.75744V5.19028C16.665 5.57596 16.9777 5.88866 17.3634 5.88866C17.7491 5.88866 18.0618 5.57596 18.0618 5.19028V2.75727L20.4345 3.77394C20.5243 3.81253 20.6177 3.83086 20.7093 3.83086C20.9805 3.83086 21.2382 3.67198 21.3515 3.40729C21.5036 3.05269 21.3393 2.64203 20.9849 2.49031L17.6385 1.05634C17.4625 0.980568 17.264 0.980568 17.0882 1.05634L13.8882 2.4278C13.5339 2.57953 13.3695 2.99018 13.5215 3.34479C13.6733 3.69974 14.085 3.86543 14.4385 3.71161Z" fill="currentColor"/>
+						<path d="M13.8882 13.5396L16.6681 14.7308V22.3576C16.6681 22.7433 16.9808 23.056 17.3665 23.056C17.7522 23.056 18.0649 22.7433 18.0649 22.3576V14.7308L20.8928 13.5188C21.2471 13.3671 21.4116 12.9564 21.2595 12.6018C21.1078 12.2479 20.6975 12.0824 20.3425 12.2352L17.3665 13.5106L14.4385 12.2559C14.0832 12.1032 13.6729 12.2682 13.5215 12.6226C13.3695 12.9774 13.5339 13.3878 13.8882 13.5396Z" fill="currentColor"/>
+						<path d="M6.49796 27.0133L4.47107 26.1447L8.43546 23.3028C8.78971 23.151 8.95418 22.7404 8.80211 22.3858C8.65038 22.0315 8.24008 21.8674 7.88513 22.0191L3.39677 25.0856V18.0575C3.39677 17.6718 3.08407 17.3591 2.69839 17.3591C2.3127 17.3591 2 17.6718 2 18.0575V26.1447C2 26.424 2.16639 26.6767 2.42322 26.7865L5.94763 28.2968C6.03737 28.3353 6.13078 28.3537 6.22245 28.3537C6.4936 28.3537 6.7513 28.1948 6.86461 27.9301C7.01651 27.5755 6.85222 27.165 6.49796 27.0133Z" fill="currentColor"/>
+						<path d="M20.5128 30.3151L18.0627 31.3651V28.9323C18.0627 28.5466 17.75 28.2339 17.3643 28.2339C16.9786 28.2339 16.6659 28.5466 16.6659 28.9323V31.3651L14.3057 30.3537C13.9504 30.2002 13.5398 30.3655 13.3887 30.7203C13.2367 31.0749 13.401 31.4856 13.7554 31.6373L17.0892 33.0662C17.1772 33.1041 17.2706 33.1228 17.3643 33.1228C17.4581 33.1228 17.5515 33.1041 17.6395 33.0662L21.0632 31.5989C21.4174 31.4472 21.5819 31.0365 21.4298 30.6819C21.2781 30.3273 20.8678 30.163 20.5128 30.3151Z" fill="currentColor"/>
+						<path d="M32.0327 17.3591C31.647 17.3591 31.3343 17.6718 31.3343 18.0575V25.0856L25.9425 22.0607C25.5875 21.9072 25.1765 22.0733 25.0255 22.4273C24.8734 22.7819 25.0377 23.1926 25.3921 23.3443L30.2598 26.1445L28.2912 26.9883C27.9369 27.1401 27.7725 27.5507 27.9245 27.9053C28.0377 28.17 28.2956 28.3289 28.5667 28.3289C28.6584 28.3289 28.752 28.3106 28.8415 28.272L32.308 26.7865C32.5646 26.6767 32.731 26.424 32.731 26.1447V18.0575C32.731 17.6718 32.4183 17.3591 32.0327 17.3591Z" fill="currentColor"/>
+					</svg>
+					Примерить в интерьере
+					</button>
+			`;
+
+			document.querySelector('.page__btn-try').addEventListener('click', () => {
+				disableScroll();
+				document.querySelector('.modal-fade').classList.add('active');
+				document.querySelector('.modal').classList.add('active');
+			});
+		}
+
+		document.querySelector('.page__btn-3d').addEventListener('click', () => {
+				document.querySelector('.sofa-3d').classList.add('active');
+				document.querySelector('.hold-rotate').classList.add('active');
+				document.querySelector('.page__close-popup').classList.add('active');
+				document.querySelector('#ui').classList.add('active');
+			});	
+
+			document.querySelector('.page__close-popup').addEventListener('click', () => {
+				document.querySelector('.sofa-3d').classList.remove('active');
+				document.querySelector('.hold-rotate').classList.remove('active');
+				document.querySelector('.page__close-popup').classList.remove('active');
+				document.querySelector('#ui').classList.remove('active');
+			});
+		
+		document.querySelector('.modal__content-close').addEventListener('click', () => {
+				modalClose();
+		});
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            modalClose();
+        }
+        if(e.target.classList.contains('modal__content')) {
+            modalClose();
+        }
+    })
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code == "Escape") {
+            modalClose();
+        }
+    })
+
+		function modalClose() {
+			enableScroll();
+			document.querySelector('.modal').classList.remove('active');
+			document.querySelector('.modal-fade').classList.remove('active');
+		}
+
+		function disableScroll() {
+			const fixBlocks = document?.querySelectorAll('.header');
+			const pagePosition = window.scrollY;
+			const paddingOffset = `${(window.innerWidth - document.body.offsetWidth)}px`;
+
+			document.documentElement.style.scrollBehavior = 'none';
+			fixBlocks.forEach(el => { el.style.paddingRight = paddingOffset; });
+			document.body.style.paddingRight = paddingOffset;
+			document.body.classList.add('dis-scroll');
+			document.body.dataset.position = pagePosition;
+			document.body.style.top = `-${pagePosition}px`;
+		}
+
+		function enableScroll() {
+			const fixBlocks = document?.querySelectorAll('.header');
+			const pagePosition = parseInt(document.body.dataset.position, 10);
+			fixBlocks.forEach(el => { el.style.paddingRight = '0px'; });
+			document.body.style.paddingRight = '0px';
+
+			document.body.style.top = 'auto';
+			document.body.classList.remove('dis-scroll');
+			window.scroll({
+					top: pagePosition,
+					left: 0
+			});
+			document.body.removeAttribute('data-position');
+		};
+
+		function mobileCheck() {
+			const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+			if (/android/i.test(userAgent)) {
+				document.documentElement.classList.add('page--android');
+				return "Android";
+			}
+
+			if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+				document.documentElement.classList.add('page--ios');
+				return "iOS";
+			}
+
+			return "unknown";
+		};
+
+	</script>
+  </body>
+</html>
