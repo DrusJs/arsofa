@@ -43,6 +43,10 @@
 			padding: 50px;
 			min-height: 500px;
 		}
+		.page__wrapper,
+		.page__img-wrapper {
+			min-height: 500px;
+		}
 
 		.page__img-wrapper {
 			position: relative;
@@ -300,7 +304,8 @@
 			fill: currentColor;
 		}
 
-		.page__wrapper {
+		.page__wrapper,
+		.page__img-wrapper {
 			min-height: 200px;
 		}
 
@@ -346,8 +351,11 @@
 			#viewportContainer {
 				display: flex;
 			}
-			.sofa-3d {
+			.sofa-3d,
+			.page__wrapper,
+			.page__img-wrapper  {
 				min-height: 200px;
+				height: 70vw;
 			}
 		}
 
